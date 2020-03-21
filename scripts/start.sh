@@ -52,6 +52,13 @@ do
   RETRIES=$((RETRIES+1))
 done
 
+# set defaults
+echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop appServiceHost -value ${APPSERVER_HOST}
+echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop appServicePort -value ${APPSERVER_PORT}
+echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop appServiceProtocol -value ${APPSERVER_PROTOCOL}
+echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop serviceLoggingLevel -value ${LOGGING_LEVEL}
+echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop serviceLoggingEntryTypes -value ${LOG_ENTRY_TYPES}
+
 # deploy web services
 for f in /var/lib/openedge/proxies/*.wsm ; do
   servicename=`echo ${f} | awk -F"." '{print $1}' | awk -F"/" '{print $NF}'`

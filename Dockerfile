@@ -22,6 +22,9 @@ ENV DLC=/usr/dlc \
     WEBSERVICE_NAME=wsa1 \
     WEBSERVICE_PORT=80 \
     WEBSERVICE_HOST=localhost \
+    APPSERVER_HOST=localhost \
+    APPSERVER_PORT=25000 \
+    APPSERVER_PROTOCOL=AppserverDC \
     LOGGING_LEVEL="2" \
     LOG_ENTRY_TYPES="WSADefault"
 RUN mkdir /usr/wrk/
