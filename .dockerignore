@@ -1,3 +1,4 @@
 *
 !conf/response.ini
+!conf/expect.exp
 !scripts/*.*

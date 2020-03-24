@@ -1,0 +1,51 @@
+#!/usr/bin/expect
+
+#exp_internal 1
+
+spawn rm progress.cfg
+send "y\r"
+
+spawn "/install/openedge/proinst"
+
+set CTRLE "\x05"
+set timeout 10
+
+expect -ex {[Y=YES] [N=NO]}
+send "N"
+
+expect "Enter=OK"
+send "\r"
+
+expect "Company Name:"
+send "Company\r"
+send "SERIAL\r"
+send "CODEPART1\t"
+send "CODEPART2\t"
+send "CODEPART3\r"
+send $CTRLE
+
+expect -ex {[Y=YES] [N=NO]}
+send "Y"
+
+expect "Management Working Dir pathname"
+send "I"
+
+expect "URL:"
+send "\x08"
+sleep 1
+send "http://localhost:8080/wsa/wsa1"
+sleep 1
+send "\r"
+
+expect -ex {[Y=YES] [N=NO] [H=Help]}
+send "N"
+
+expect "Do you want to install the above listed product(s)?"
+send "Y"
+
+expect "Copy the scripts to /usr/bin?"
+send "N"
+
+expect "tailoring the installed OpenEdge Service Pack files"
+sleep 1
+send "E"

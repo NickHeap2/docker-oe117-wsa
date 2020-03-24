@@ -3,6 +3,7 @@
 set -e
 
 LOG_FILES="/usr/local/tomcat/logs/catalina.out /usr/wrk/${WEBSERVICE_NAME}.wsa.log"
+touch ${LOG_FILES}
 
 signal_handler() {
 
@@ -25,51 +26,22 @@ s|wsaUrl=http://localhost:80/wsa/${WEBSERVICE_NAME}|wsaUrl=http://${WEBSERVICE_H
 s|loggingLevel=2|loggingLevel=${LOGGING_LEVEL}|g;\
 s|logEntryTypes=WSADefault|logEntryTypes=${LOG_ENTRY_TYPES}|g" /usr/dlc/properties/ubroker.properties
 
-# start tomcat 
+# move webservice
+mv /usr/local/tomcat/webapps/wsa/wsa1 /usr/local/tomcat/webapps/wsa/${WEBSERVICE_NAME}
+# repoint wsdls
+sed -i "s|localhost:8080/wsa/wsa1|${WEBSERVICE_HOST}:${WEBSERVICE_PORT}/wsa/${WEBSERVICE_NAME}|g" /usr/local/tomcat/webapps/wsa/${WEBSERVICE_NAME}/*.wsdl
+# repoint appserver
+sed -i "s|<appServiceProtocol>Appserver</appServiceProtocol>|<appServiceProtocol>${APPSERVER_PROTOCOL}</appServiceProtocol>|g" /usr/local/tomcat/webapps/wsa/${WEBSERVICE_NAME}/*.props
+sed -i "s|<appServiceHost>localhost</appServiceHost>|<appServiceHost>${APPSERVER_HOST}</appServiceHost>|g" /usr/local/tomcat/webapps/wsa/${WEBSERVICE_NAME}/*.props
+sed -i "s|<appServicePort>5162</appServicePort>|<appServicePort>${APPSERVER_PORT}</appServicePort>|g" /usr/local/tomcat/webapps/wsa/${WEBSERVICE_NAME}/*.props
+sed -i "s|<serviceLoggingLevel>2</serviceLoggingLevel>|<serviceLoggingLevel>${LOGGING_LEVEL}</serviceLoggingLevel>|g" /usr/local/tomcat/webapps/wsa/${WEBSERVICE_NAME}/*.props
+sed -i "s|<serviceLoggingEntryTypes>WSADefault</serviceLoggingEntryTypes>|<serviceLoggingEntryTypes>${LOG_ENTRY_TYPES}</serviceLoggingEntryTypes>|g" /usr/local/tomcat/webapps/wsa/${WEBSERVICE_NAME}/*.props
+
+# start tomcat
+export CATALINA_PID=/usr/local/tomcat/logs/pid.txt
 echo "Starting tomcat..."
 /usr/local/tomcat/bin/catalina.sh start
 TOMCAT_PID=`cat /usr/local/tomcat/logs/pid.txt`
-
-# start the admin server
-echo "Starting admin server..."
-/usr/dlc/bin/proadsv -start
-
-RETRIES=0
-while true
-do
-  if [ "${RETRIES}" -gt 10 ]
-  then
-    echo "$(date +%F_%T) ERROR: AdminServer didn't start so exiting."
-    tail /usr/wrk/admserv.log
-    exit 1
-  fi
-
-  if /usr/dlc/bin/proadsv -query; then
-    break;
-  fi
-
-  sleep 1
-  RETRIES=$((RETRIES+1))
-done
-
-# set defaults
-echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop appServiceHost -value ${APPSERVER_HOST}
-echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop appServicePort -value ${APPSERVER_PORT}
-echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop appServiceProtocol -value ${APPSERVER_PROTOCOL}
-echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop serviceLoggingLevel -value ${LOGGING_LEVEL}
-echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -setdefaults -prop serviceLoggingEntryTypes -value ${LOG_ENTRY_TYPES}
-
-# deploy web services
-for f in /var/lib/openedge/proxies/*.wsm ; do
-  servicename=`echo ${f} | awk -F"." '{print $1}' | awk -F"/" '{print $NF}'`
-  echo "Deploying ${servicename}..."
-  echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -deploy -wsm ${f}
-  echo password | /usr/dlc/bin/wsaman -i ${WEBSERVICE_NAME} -webserverauth restmgr -enable -appname ${servicename}
-done
-
-# stop the admin server
-echo "Stopping admin server..."
-/usr/dlc/bin/proadsv -stop
 
 echo "Tomcat running as pid: ${CATALINA_PID}"
 
